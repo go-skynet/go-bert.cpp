@@ -146,7 +146,7 @@ bert.cpp/build:
 	cd bert.cpp && mkdir build
 
 bert.o: bert.cpp/build
-	sed -i "s/#include <regex>/#include <regex>\n#include <unordered_map>/" bert.cpp/bert.cpp 
+	@sed -i'' "s/#include <regex>/#include <regex>\n#include <unordered_map>/" bert.cpp/bert.cpp 
 	cd bert.cpp/build && cmake .. -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release && make
 	cp -r bert.cpp/build/CMakeFiles/bert.dir/bert.cpp.o ./bert.o
 
