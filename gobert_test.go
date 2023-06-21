@@ -22,7 +22,7 @@ var _ = Describe("gobert binding", func() {
 			model, err := New(filepath.Join("fixtures", "model.bin"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(model).ToNot(BeNil())
-			embeddings, err := model.Embeddings("foo")
+			embeddings, err := model.StringEmbeddings("foo")
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Println(embeddings)
 		})

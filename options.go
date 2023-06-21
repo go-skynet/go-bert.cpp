@@ -1,36 +1,15 @@
 package gobert
 
-type PredictOptions struct {
-	Threads       int
-	EmbeddingSize int
+import (
+	common "github.com/go-skynet/go-common"
+)
+
+var DefaultModelInitializationOptions common.InitializationOptions = common.InitializationOptions{}
+var MergeInitializationOptionsWithDefaults = common.GetMergeInitializationOptionsFnFromDefault(DefaultModelInitializationOptions)
+
+var DefaultPredictOptions common.PredictTextOptions = common.PredictTextOptions{
+	Threads: 4,
+	Tokens:  99999, // Formerly EmbeddingSize, llama embeddings uses Tokens for this. @mudler, do we like this convention, or should we seperate the embedding token size for some reason?
 }
 
-type PredictOption func(p *PredictOptions)
-
-var DefaultOptions PredictOptions = PredictOptions{
-	Threads:       4,
-	EmbeddingSize: 99999,
-}
-
-// SetThreads sets the number of threads to use for text generation.
-func SetEmbeddingSize(es int) PredictOption {
-	return func(p *PredictOptions) {
-		p.EmbeddingSize = es
-	}
-}
-
-// SetThreads sets the number of threads to use for text generation.
-func SetThreads(threads int) PredictOption {
-	return func(p *PredictOptions) {
-		p.Threads = threads
-	}
-}
-
-// Create a new PredictOptions object with the given options.
-func NewPredictOptions(opts ...PredictOption) PredictOptions {
-	p := DefaultOptions
-	for _, opt := range opts {
-		opt(&p)
-	}
-	return p
-}
+var MergePredictOptionsWithDefaults = common.GetMergePredictTextOptionsFnFromDefault(DefaultPredictOptions)

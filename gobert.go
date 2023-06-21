@@ -10,6 +10,7 @@ package gobert
 import "C"
 import (
 	"fmt"
+	common "github.com/go-skynet/go-common"
 	"unsafe"
 )
 
@@ -17,10 +18,16 @@ type Bert struct {
 	state unsafe.Pointer
 }
 
-func New(model string) (*Bert, error) {
+func New(modelPath string) (*Bert, error) {
+	return NewWithInitializationOptions(modelPath, DefaultModelInitializationOptions)
+}
+
+// TODO: Not sure about this one. This exists to be an analog of the other go-* backends, but we ignore every option...
+// May not actually be useful since go interfaces apply to functions with recievers - will this ever get used?
+func NewWithInitializationOptions(modelPath string, _ common.InitializationOptions) (*Bert, error) {
 	state := C.bert_allocate_state()
-	modelPath := C.CString(model)
-	result := C.bert_bootstrap(modelPath, state)
+	cModelPath := C.CString(modelPath)
+	result := C.bert_bootstrap(cModelPath, state)
 	if result != 0 {
 		return nil, fmt.Errorf("failed loading model")
 	}
@@ -28,10 +35,12 @@ func New(model string) (*Bert, error) {
 	return &Bert{state: state}, nil
 }
 
-func (l *Bert) Embeddings(text string, opts ...PredictOption) ([]float32, error) {
+func (l *Bert) StringEmbeddings(text string, opts ...common.PredictTextOptionSetter) ([]float32, error) {
+	return l.StringEmbeddingsWithOptions(text, *MergePredictOptionsWithDefaults(opts...))
+}
 
-	po := NewPredictOptions(opts...)
-	embeddings := make([]float32, po.EmbeddingSize)
+func (l *Bert) StringEmbeddingsWithOptions(text string, po common.PredictTextOptions) ([]float32, error) {
+	embeddings := make([]float32, po.Tokens)
 	embeddingsPtr := (*C.float)(&embeddings[0])
 
 	params := C.bert_allocate_params(C.CString(text), C.int(po.Threads))
@@ -54,9 +63,12 @@ func (l *Bert) Embeddings(text string, opts ...PredictOption) ([]float32, error)
 	return embeddings, nil
 }
 
-func (l *Bert) TokenEmbeddings(tokens []int, opts ...PredictOption) ([]float32, error) {
-	po := NewPredictOptions(opts...)
-	embeddings := make([]float32, po.EmbeddingSize)
+func (l *Bert) TokenEmbeddings(tokens []int, opts ...common.PredictTextOptionSetter) ([]float32, error) {
+	return l.TokenEmbeddingsWithOptions(tokens, *MergePredictOptionsWithDefaults(opts...))
+}
+
+func (l *Bert) TokenEmbeddingsWithOptions(tokens []int, po common.PredictTextOptions) ([]float32, error) {
+	embeddings := make([]float32, po.Tokens)
 	embeddingsPtr := (*C.float)(&embeddings[0])
 
 	myArray := (*C.int)(C.malloc(C.size_t(len(tokens)) * C.sizeof_int))

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	bert "github.com/go-skynet/go-bert.cpp"
+	common "github.com/go-skynet/go-common"
 )
 
 var (
@@ -40,7 +41,7 @@ func main() {
 	for {
 		text := readMultiLineInput(reader)
 
-		res, err := l.Embeddings(text, bert.SetThreads(threads))
+		res, err := l.StringEmbeddings(text, common.SetThreads(threads))
 		if err != nil {
 			panic(err)
 		}
