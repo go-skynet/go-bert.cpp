@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	bert "github.com/go-skynet/go-bert.cpp"
+	common "github.com/go-skynet/go-common"
 )
 
 var (
@@ -28,7 +29,7 @@ func main() {
 		fmt.Printf("Parsing program arguments failed: %s", err)
 		os.Exit(1)
 	}
-	l, err := bert.New(model)
+	l, err := bert.BertBackendInitializer.Defaults(model)
 	if err != nil {
 		fmt.Println("Loading the model failed:", err.Error())
 		os.Exit(1)
@@ -40,7 +41,7 @@ func main() {
 	for {
 		text := readMultiLineInput(reader)
 
-		res, err := l.Embeddings(text, bert.SetThreads(threads))
+		res, err := l.StringEmbeddings(text, common.SetThreads(threads))
 		if err != nil {
 			panic(err)
 		}

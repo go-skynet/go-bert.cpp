@@ -10,6 +10,7 @@ package gobert
 import "C"
 import (
 	"fmt"
+	common "github.com/go-skynet/go-common"
 	"unsafe"
 )
 
@@ -17,21 +18,35 @@ type Bert struct {
 	state unsafe.Pointer
 }
 
-func New(model string) (*Bert, error) {
-	state := C.bert_allocate_state()
-	modelPath := C.CString(model)
-	result := C.bert_bootstrap(modelPath, state)
-	if result != 0 {
-		return nil, fmt.Errorf("failed loading model")
-	}
+var BertBackendInitializer common.BackendInitializer[Bert] = common.BackendInitializer[Bert]{
+	DefaultInitializationOptions: common.InitializationOptions{},
+	Constructor: func(modelPath string, initializationOptions common.InitializationOptions) (*Bert, error) {
+		state := C.bert_allocate_state()
+		cModelPath := C.CString(modelPath)
+		result := C.bert_bootstrap(cModelPath, state)
+		if result != 0 {
+			return nil, fmt.Errorf("failed loading model")
+		}
 
-	return &Bert{state: state}, nil
+		return &Bert{state: state}, nil
+	},
 }
 
-func (l *Bert) Embeddings(text string, opts ...PredictOption) ([]float32, error) {
+func (l Bert) Name() string {
+	return "bert"
+}
 
-	po := NewPredictOptions(opts...)
-	embeddings := make([]float32, po.EmbeddingSize)
+func (l Bert) Close() error {
+	C.bert_free_model(l.state)
+	return nil
+}
+
+func (l *Bert) StringEmbeddings(text string, opts ...common.PredictTextOptionSetter) ([]float32, error) {
+	return l.StringEmbeddingsWithOptions(text, *MergePredictOptionsWithDefaults(opts...))
+}
+
+func (l *Bert) StringEmbeddingsWithOptions(text string, po common.PredictTextOptions) ([]float32, error) {
+	embeddings := make([]float32, po.Tokens)
 	embeddingsPtr := (*C.float)(&embeddings[0])
 
 	params := C.bert_allocate_params(C.CString(text), C.int(po.Threads))
@@ -54,9 +69,12 @@ func (l *Bert) Embeddings(text string, opts ...PredictOption) ([]float32, error)
 	return embeddings, nil
 }
 
-func (l *Bert) TokenEmbeddings(tokens []int, opts ...PredictOption) ([]float32, error) {
-	po := NewPredictOptions(opts...)
-	embeddings := make([]float32, po.EmbeddingSize)
+func (l *Bert) TokenEmbeddings(tokens []int, opts ...common.PredictTextOptionSetter) ([]float32, error) {
+	return l.TokenEmbeddingsWithOptions(tokens, *MergePredictOptionsWithDefaults(opts...))
+}
+
+func (l *Bert) TokenEmbeddingsWithOptions(tokens []int, po common.PredictTextOptions) ([]float32, error) {
+	embeddings := make([]float32, po.Tokens)
 	embeddingsPtr := (*C.float)(&embeddings[0])
 
 	myArray := (*C.int)(C.malloc(C.size_t(len(tokens)) * C.sizeof_int))
@@ -84,8 +102,4 @@ func (l *Bert) TokenEmbeddings(tokens []int, opts ...PredictOption) ([]float32, 
 	}
 
 	return embeddings, nil
-}
-
-func (l *Bert) Free() {
-	C.bert_free_model(l.state)
 }

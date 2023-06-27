@@ -155,6 +155,7 @@ clean:
 	rm -f *.a
 	rm -rf build
 	rm -rf example
+	rm -rf fixtures
 
 gobert.o: gobert.cpp
 	$(CXX) $(CXXFLAGS) gobert.cpp -o gobert.o -c $(LDFLAGS)
