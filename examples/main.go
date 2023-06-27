@@ -29,7 +29,7 @@ func main() {
 		fmt.Printf("Parsing program arguments failed: %s", err)
 		os.Exit(1)
 	}
-	l, err := bert.New(model)
+	l, err := bert.BertBackendInitializer.Defaults(model)
 	if err != nil {
 		fmt.Println("Loading the model failed:", err.Error())
 		os.Exit(1)

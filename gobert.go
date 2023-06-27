@@ -18,21 +18,27 @@ type Bert struct {
 	state unsafe.Pointer
 }
 
-func New(modelPath string) (*Bert, error) {
-	return NewWithInitializationOptions(modelPath, DefaultModelInitializationOptions)
+var BertBackendInitializer common.BackendInitializer[Bert] = common.BackendInitializer[Bert]{
+	DefaultInitializationOptions: common.InitializationOptions{},
+	Constructor: func(modelPath string, initializationOptions common.InitializationOptions) (*Bert, error) {
+		state := C.bert_allocate_state()
+		cModelPath := C.CString(modelPath)
+		result := C.bert_bootstrap(cModelPath, state)
+		if result != 0 {
+			return nil, fmt.Errorf("failed loading model")
+		}
+
+		return &Bert{state: state}, nil
+	},
 }
 
-// TODO: Not sure about this one. This exists to be an analog of the other go-* backends, but we ignore every option...
-// May not actually be useful since go interfaces apply to functions with recievers - will this ever get used?
-func NewWithInitializationOptions(modelPath string, _ common.InitializationOptions) (*Bert, error) {
-	state := C.bert_allocate_state()
-	cModelPath := C.CString(modelPath)
-	result := C.bert_bootstrap(cModelPath, state)
-	if result != 0 {
-		return nil, fmt.Errorf("failed loading model")
-	}
+func (l Bert) Name() string {
+	return "bert"
+}
 
-	return &Bert{state: state}, nil
+func (l Bert) Close() error {
+	C.bert_free_model(l.state)
+	return nil
 }
 
 func (l *Bert) StringEmbeddings(text string, opts ...common.PredictTextOptionSetter) ([]float32, error) {
@@ -96,8 +102,4 @@ func (l *Bert) TokenEmbeddingsWithOptions(tokens []int, po common.PredictTextOpt
 	}
 
 	return embeddings, nil
-}
-
-func (l *Bert) Free() {
-	C.bert_free_model(l.state)
 }
